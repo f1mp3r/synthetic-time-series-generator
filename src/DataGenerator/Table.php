@@ -109,7 +109,7 @@ class Table
         $csvRows = array_filter(
             array_map(
                 'str_getcsv',
-                explode("\r\n", trim($classification))
+                explode("\n", trim($classification))
             )
         );
 
@@ -165,7 +165,13 @@ class Table
      */
     private static function parseTable(string $dataTable)
     {
-        $csvRows = array_map('str_getcsv', explode("\r\n", trim($dataTable)));
+        $csvRows = array_map(
+            'str_getcsv',
+            array_map(
+                'trim',
+                explode("\n", trim($dataTable))
+            )
+        );
 
         if (!is_array($csvRows) || empty($csvRows)) {
             throw new Exception('Data table provided is not valid');
