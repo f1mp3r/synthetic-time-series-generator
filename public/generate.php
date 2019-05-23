@@ -9,34 +9,39 @@ require_once '../vendor/autoload.php';
 ini_set('precision', 16);
 error_reporting(E_ALL ^ E_NOTICE);
 
-$generator = new Generator(
-    isset($_GET['data_table']) && isset($_GET['classification'])
-        ? Table::fromExternal($_GET['data_table'], $_GET['classification'])
-        : Table::fromArray(require('../common/data_constants.php'))
-);
+$isWithExternalData = isset($_POST['data_table']) && isset($_POST['classification'])
+    && !empty(trim($_POST['data_table'])) && !empty(trim($_POST['classification']));
 
-$numberOfTables = $_GET['tables'] ?? 1;
-$export = isset($_GET['download']) && $_GET['download'] == 1;
+try {
+    $generator = new Generator(
+        $isWithExternalData
+            ? Table::fromExternal($_POST['data_table'], $_POST['classification'])
+            : Table::fromArray(require('../common/data_constants.php'))
+    );
 
-$allTables = [];
-foreach (range(1, $numberOfTables) as $item) {
-    try {
-        $tableData = $generator->generateTable();
-        $tableData[] = [];
-        $tableData[] = [];
+    $numberOfTables = isset($_POST['tables']) && !empty($_POST['tables']) ? (int) $_POST['tables'] : 1;
+    $numberOfRows = isset($_POST['rows']) && !empty($_POST['rows']) ? (int) $_POST['rows'] : 20;
+    $export = isset($_POST['download']) && $_POST['download'] == 1;
 
-        $allTables = array_merge($allTables, $tableData);
-    } catch (Exception $e) {
-        dump($e->getMessage());
+    if ($numberOfTables > 1000 || $numberOfTables < 1) {
+        throw new OutOfRangeException('Tables number should be between 1 and 2000');
     }
-}
 
-if ($export) {
-    $filename = '../files/' . time() . '.csv';
-
-    if (Exporter::export($filename, $allTables, new CsvFormat)) {
-        Exporter::download($filename);
+    if ($numberOfRows > 100 || $numberOfRows < 1) {
+        throw new OutOfRangeException('Rows number should be between 1 and 100');
     }
-} else {
-    echo HtmlFormat::format($allTables, ['header' => true]);
+
+    $allTables = $generator->generateTables($numberOfTables, $numberOfRows);
+
+    if ($export) {
+        $filename = '../files/' . time() . '.csv';
+
+        if (Exporter::export($filename, $allTables, new CsvFormat)) {
+            Exporter::download($filename);
+        }
+    } else {
+        echo HtmlFormat::format($allTables, ['header' => true]);
+    }
+} catch (Exception $e) {
+    echo htmlspecialchars($e->getMessage());
 }

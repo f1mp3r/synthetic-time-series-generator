@@ -19,6 +19,11 @@ class Row
      */
     private $isCrossed = false;
 
+    /**
+     * @var int
+     */
+    private $class = 0;
+
     public function __construct($numbers = [])
     {
         $this->numbers = $numbers;
@@ -43,17 +48,22 @@ class Row
         return $this->isCrossed;
     }
 
-    public function addNumber(Number $number)
+    public function addNumber(Number $number): Row
     {
         $this->numbers[] = $number;
+
+        return $this;
     }
 
     /**
      * @param int $index
+     * @return Row
      */
-    public function setIndex($index)
+    public function setIndex($index): Row
     {
         $this->index = $index;
+
+        return $this;
     }
 
     /**
@@ -64,6 +74,9 @@ class Row
         return $this->index;
     }
 
+    /**
+     * @return bool|Number
+     */
     public function getNextUncrossedNumber()
     {
         foreach ($this->numbers as $number) {
@@ -73,5 +86,24 @@ class Row
         }
 
         return false;
+    }
+
+    /**
+     * @return int
+     */
+    public function getClass(): int
+    {
+        return $this->class;
+    }
+
+    /**
+     * @param int $class
+     * @return Row
+     */
+    public function setClass(int $class): Row
+    {
+        $this->class = $class;
+
+        return $this;
     }
 }

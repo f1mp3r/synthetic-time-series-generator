@@ -19,12 +19,15 @@ class Util
      * Returns class index
      *
      * @param float $number
+     * @param array $classification
      * @return int
      * @throws Exception
      */
-    public static function getClassIndex(float $number): int
+    public static function getClassIndex(float $number, array $classification = []): int
     {
-        foreach (self::CLASS_CATEGORIES as $index => $numbers) {
+        $classification = !empty($classification) ? $classification : self::CLASS_CATEGORIES;
+
+        foreach ($classification as $index => $numbers) {
             if (($number > $numbers[0]) && ($number <= $numbers[1])) {
                 return $index;
             }
@@ -33,6 +36,11 @@ class Util
         throw new Exception('Can\'t find class for number ' . $number);
     }
 
+    /**
+     * @param $probability
+     * @return float|int
+     * @throws Exception
+     */
     public static function NormSInv($probability)
     {
         $a1 = -39.6968302866538;

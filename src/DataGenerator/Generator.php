@@ -6,19 +6,31 @@ use Exception;
 
 class Generator
 {
-    private $dataTable;
     private const NUMBER_AVERAGE = 3.536001766706810;
     private const STANDARD_DEVIATION = 0.766421563905520;
+
+    /**
+     * @var Table
+     */
+    private $table;
+
+    /**
+     * @var bool
+     */
     private $debug = false;
-    private $headers = ['', 'Est. vol', 'Class', 'Random', 'OUT', 'NOV', 'DEZ', 'JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'Year'];
+
+    /**
+     * @var array
+     */
+    private $headers = ['#', 'Est. vol', 'Class', 'Random', 'OUT', 'NOV', 'DEZ', 'JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'Year'];
 
     /**
      * Generator constructor.
-     * @param Table $dataTable
+     * @param Table $table
      */
-    public function __construct(Table $dataTable)
+    public function __construct(Table $table)
     {
-        $this->dataTable = $dataTable;
+        $this->table = $table;
     }
 
     /**
@@ -38,18 +50,18 @@ class Generator
             'exponential' => $exponential
         ]);
 
-        $categoryId = Util::getClassIndex($exponential);
-        $randomRow = $this->dataTable->getClass($categoryId)->getRandomUncrossedRow();
+        $classId = Util::getClassIndex($exponential, $this->table->getClassification());
+        $randomRow = $this->table->getRandomUncrossedRow($classId);
 
         if (!$randomRow) {
-            $this->dataTable->getClass($categoryId)->resetRowsStatus();
-            $randomRow = $this->dataTable->getClass($categoryId)->getRandomUncrossedRow();
+            $this->table->resetRowsStatus($classId);
+            $randomRow = $this->table->getRandomUncrossedRow($classId);
         }
 
-        $csvData = [];
-        $csvData[] = $exponential;
-        $csvData[] = $categoryId + 1;
-        $csvData[] = $randomRow->getIndex() + 1;
+        $result = [];
+        $result[] = $exponential;
+        $result[] = $classId + 1;
+        $result[] = $randomRow->getIndex() + 1;
         $this->debug($exponential, $randomRow->getIndex());
 
         $sum = 0;
@@ -58,26 +70,49 @@ class Generator
             $number->setIsChecked(true);
             $generated = ($number->getNumber() * $exponential);
             $sum += $generated;
-            $csvData[] = $generated;
+            $result[] = $generated;
         }
 
         $randomRow->setIsCrossed(true);
-        $csvData[] = $sum;
+        $result[] = $sum;
 
-        return $csvData;
+        return $result;
+    }
+
+    public function generateTables(int $numberOfTables = 1, int $numberOfRows = 20, array $presetRandomNumbers = [])
+    {
+        $result = [];
+
+        foreach (range(1, $numberOfTables) as $tableIndex) {
+            $table = $this->generateTable(
+                $numberOfRows,
+                $presetRandomNumbers[$tableIndex - 1]
+            );
+            $table[] = [];
+            $table[] = [];
+
+            $result = array_merge(
+                $result,
+                $table
+            );
+        }
+
+        return $result;
     }
 
     /**
      * @param int $numberOfRows
      * @param array $presetRandomNumbers
+     * @param bool $withHeader
      * @return array
      * @throws Exception
      */
-    public function generateTable(int $numberOfRows = 20, array $presetRandomNumbers = []): array
+    public function generateTable(int $numberOfRows = 20, ?array $presetRandomNumbers = []): array
     {
         $table = [
             $this->headers
         ];
+
         foreach (range(1, $numberOfRows) as $index => $item) {
             $row = $this->generateRandomDataRow(
                 $presetRandomNumbers[$index] ?? $this->generateRandomNumber()
