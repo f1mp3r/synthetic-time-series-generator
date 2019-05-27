@@ -1,5 +1,5 @@
 vendor/
 composer.lock
-files/*
-.gitignore
+/files/*
+!files/.gitignore
 .idea/
